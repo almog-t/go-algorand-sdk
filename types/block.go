@@ -1,5 +1,9 @@
 package types
 
+import (
+	"github.com/algorand/go-algorand/protocol"
+)
+
 type (
 	// BlockHash represents the hash of a block
 	BlockHash Digest
@@ -92,6 +96,11 @@ type (
 		// transactions have ever been committed (since TxnCounter
 		// started being supported).
 		TxnCounter uint64 `codec:"tc"`
+
+		// StateProofTracking tracks the status of the state proofs, potentially
+		// for multiple types of ASPs (Algorand's State Proofs).
+		//msgp:sort protocol.StateProofType protocol.SortStateProofType
+		StateProofTracking map[protocol.StateProofType]StateProofTrackingData `codec:"spt,allocbound=protocol.NumStateProofTypes"`
 
 		// ParticipationUpdates contains the information needed to mark
 		// certain accounts offline because their participation keys expired
@@ -212,6 +221,29 @@ type (
 
 		ConfigAsset   uint64 `codec:"caid"`
 		ApplicationID uint64 `codec:"apid"`
+	}
+
+	// StateProofTrackingData tracks the status of state proofs.
+	StateProofTrackingData struct {
+		_struct struct{} `codec:",omitempty,omitemptyarray"`
+
+		// StateProofVotersCommitment is the root of a vector commitment containing the
+		// online accounts that will help sign a state proof.  The
+		// VC root, and the state proof, happen on blocks that
+		// are a multiple of ConsensusParams.StateProofRounds.  For blocks
+		// that are not a multiple of ConsensusParams.StateProofRounds,
+		// this value is zero.
+		StateProofVotersCommitment GenericDigest `codec:"v"`
+
+		// StateProofVotersTotalWeight is the total number of microalgos held by
+		// the accounts in StateProofVotersCommitment (or zero, if the merkle root is
+		// zero).  This is intended for computing the threshold of votes to
+		// expect from StateProofVotersCommitment.
+		StateProofVotersTotalWeight MicroAlgos `codec:"t"`
+
+		// StateProofNextRound is the next round for which we will accept
+		// a StateProof transaction.
+		StateProofNextRound Round `codec:"n"`
 	}
 )
 
